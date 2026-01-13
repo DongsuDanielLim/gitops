@@ -1,0 +1,22 @@
+apiVersion: v2
+name: order-service
+description: A Helm chart for Kubernetes
+type: application
+
+# 차트 버전
+version: 0.1.0
+
+# 앱 버전 (배포되는 애플리케이션 버전)
+appVersion: "1.16.0"
+
+# 유지보수자 정보
+maintainers:
+  - name: BE
+    email: test@example.com
+
+# 키워드 (검색용)
+keywords:
+  - spring-boot
+  - kotlin
+  - order
+  - microservice

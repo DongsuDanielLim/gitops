@@ -1,0 +1,38 @@
+# ============================================================================
+# Development 환경 설정
+# Kind 클러스터 + Docker Compose 인프라
+# ============================================================================
+
+replicaCount: 2
+
+image:
+  repository: order-service
+  tag: "dev"
+  pullPolicy: Never # Kind 로컬 이미지
+
+spring:
+  profile: dev
+
+database:
+  host: order-db
+  port: 5432
+  name: order_db
+  username: order_app
+  password: order_password
+
+otel:
+  enabled: true
+  endpoint: "http://otel-collector:4317"
+  metricsEndpoint: "http://otel-collector:4318/v1/metrics"
+
+environment:
+  name: dev
+  namespace: order
+
+resources:
+  requests:
+    cpu: "250m"
+    memory: "512Mi"
+  limits:
+    cpu: "1000m"
+    memory: "1Gi"

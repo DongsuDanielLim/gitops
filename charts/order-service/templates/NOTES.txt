@@ -1,0 +1,32 @@
+============================================================================
+  {{ .Chart.Name }} has been deployed!
+============================================================================
+
+Release: {{ .Release.Name }}
+Chart Version: {{ .Chart.Version }}
+App Version: {{ .Chart.AppVersion }}
+Namespace: {{ .Release.Namespace }}
+
+Get the application URL by running these commands:
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}
+{{- end }}
+{{- else if contains "NodePort" .Values.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "order-service.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "ClusterIP" .Values.service.type }}
+  kubectl port-forward svc/{{ include "order-service.fullname" . }} -n {{ .Release.Namespace }} 8080:{{ .Values.service.port }}
+  Then visit http://localhost:8080
+{{- end }}
+
+Useful commands:
+  # Check pod status
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "order-service.name" . }}
+
+  # View logs
+  kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "order-service.name" . }} -f
+
+  # Health check
+  kubectl exec -n {{ .Release.Namespace }} deploy/{{ include "order-service.fullname" . }} -- curl -s localhost:8080/actuator/health

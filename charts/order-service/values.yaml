@@ -1,0 +1,187 @@
+# order-service Helm Chart 기본값
+# 환경 별 오버라이드 : values-dev.yaml, values-prod.yaml
+
+# --------------------------------------------------------------------------
+# 기본 설정
+replicaCount: 2
+
+image:
+  repository: order-service
+  # 이미지 풀 정책(Pull Policy)입니다.
+  # IfNotPresent: 로컬에 없으면 다운로드 (운영 환경 권장)
+  # Always: 항상 다운로드 (latest 태그 사용 시 주의)
+  # kind 로컬 이미지용 : Neber, 프로덕션 : IfNotPresent
+  pullPolicy: Never
+  # 이미지 태그를 오버라이드 한다. 기본값은 Chart.yaml의 appVersion과 동일하다.
+  tag: "dev"
+
+# This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+#imagePullSecrets: []
+
+# 차트 이름 강제 변경할 때 사용 (보통은 비워둠)
+nameOverride: ""
+fullnameOverride: ""
+
+# --------------------------------------------------------------------------
+# 서비스 어카운트(ServiceAccount) 설정
+# AWS EKS에서는 IRSA(IAM Role)을 연결할 때 이 부분이 중요하다.
+serviceAccount:
+  # 서비스 어카운트 생성 여부
+  create: true
+  # API 자격 증명을 자동으로 마운트할지 여부
+  # automount: true
+  # 서비스 어카운트 추가 어노테이션
+  # ex : eks.amazonaws.com/role-arn: arn:aws:iam::12344567890:role/your-iam-role
+  annotations: {}
+  # 사용할 서비스 어카운트 이름
+  # 설정하지 않고 create가 true이면 템플릿 이름 규칙에 따라 자동 생성.
+  name: ""
+
+# --------------------------------------------------------------------------
+# 파드에 적용할 쿠버네티스 어노테이션 (프로메테우스 스크랩 설정 등)
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+podAnnotations:
+  {
+    prometheus.io/scrape: "true",
+    prometheus.io/port: "8080",
+    prometheus.io/path: "/actuator/prometheus",
+  }
+# 파드에 적용할 쿠버네티스 레이블 (team: backend, tier: api)
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+podLabels: {}
+
+# 파드 레벨의 보안 컨텍스트
+podSecurityContext:
+  {}
+  # fsGroup: 2000
+
+# 컨테이너 레벨의 보안 컨텍스트
+securityContext:
+  {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# --------------------------------------------------------------------------
+# 서비스(Service) 설정 (네트워크 노출 방식)
+# https://kubernetes.io/docs/concepts/services-networking/service/
+service:
+  # 서비스 타입 설정 (ClusterIP, NodePort, LoadBalancer)
+  # 내부 통신용이면 ClusterIP, 외부 노출은 보통 Ingress를 쓰므로 ClusterIP 유지
+  # https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+  type: ClusterIP
+  # 서비스가 노출할 포트
+  # https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
+  port: 8080
+
+# --------------------------------------------------------------------------
+# 인그레스 설정 (HTTP/HTTPS 라우팅)
+# AWS Load Balancer Controller 사용할 때 어노테이션을 설정한다.
+# https://kubernetes.io/docs/concepts/services-networking/ingress/
+ingress:
+  enabled: false
+  className: ""
+  annotations:
+    {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+    # AWS ALB : alb.ingress.kubernetes.io/scheme: internet-facing
+    # alb.ingress.kubernetes.io/target-type: ip
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+# --------------------------------------------------------------------------
+# 리소스 설정
+resources:
+  # 기본 리소스를 지정하지 않고 사용자가 의도적으로 선택하도록 권장합니다. 실제 배포시에는 주석을 해제하고 값을 지정하는 것을 권장
+  # 이렇게 하면 Minikube와 같은 리소스가 적은 환경에서 차트가 실행될 가능성이 높아집니다.
+  # 리소스를 지정하려면 다음 주석을 제거하고 필요에 따라 조정한 후 'resources:' 뒤의 중괄호를 제거하십시오.
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+# --------------------------------------------------------------------------
+# Liveness and Readiness Probes 설정
+# Spring boot의 경우 Actuator 경로(/actuator/health)로 변경이 필요할 수 있음
+# https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: http
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  failureThreshold: 3
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 5
+  failureThreshold: 3
+
+# Liveness and Readiness Probes 설정
+# https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Node 선택 및 Affinity
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# --------------------------------------------------------------------------
+# 데이터베이스 설정
+database:
+  host: "order-db"
+  port: 5432
+  name: "order_db"
+  username: "order_app"
+  # password는 실제 환경에서는 External Secrets 등으로 관리
+  # password: ""
+  passwordKey: "SPRING_DATASOURCE_PASSWORD"
+
+# OTel 설정
+otel:
+  enabled: true
+  endpoint: "http://otel-collector:4317"
+  metricsEndpoint: "http://otel-collector:4318/v1/metrics"
+  protocol: "grpc"
+
+# --------------------------------------------------------------------------
+# 환경 정보
+environment:
+  name: dev
+  namespace: order
+# --------------------------------------------------------------------------
+# Additional volumes on the output Deployment definition.
+#volumes: []
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+# Additional volumeMounts on the output Deployment definition.
+#volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+

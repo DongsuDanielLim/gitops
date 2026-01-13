@@ -1,0 +1,56 @@
+# ============================================================================
+# Production 환경 설정
+# EKS + AWS Managed Services (RDS, MSK)
+# ============================================================================
+
+replicaCount: 3
+
+image:
+  repository: 123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/order-service
+  tag: "v1.0.0"
+  pullPolicy: IfNotPresent
+
+spring:
+  profile: prod
+
+database:
+  host: order-db.cluster-xxx.ap-northeast-2.rds.amazonaws.com
+  port: 5432
+  name: order_db
+  username: order_app
+  # 프로덕션: External Secrets 사용
+  existingSecret: order-service-db-secret
+  passwordKey: password
+
+otel:
+  enabled: true
+  endpoint: "http://otel-collector.monitoring:4317"
+  metricsEndpoint: "http://otel-collector.monitoring:4318/v1/metrics"
+
+environment:
+  name: prod
+  namespace: order
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "2000m"
+    memory: "2Gi"
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: order-service
+          topologyKey: topology.kubernetes.io/zone

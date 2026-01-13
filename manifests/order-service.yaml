@@ -1,0 +1,151 @@
+# configmap : 환경설정 (민감하지 않은 정보)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: order-service-config
+  namespace: order
+data:
+  # Spring 프로파일
+  SPRING_PROFILES_ACTIVE: "dev"
+
+  # DB 연결 (docker-compose 컨테이너 이름으로 접근)
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://order-db:5432/order_db"
+
+  # Kafka 연결
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: "docker-compose-kafka-1:9092"
+
+  # OTel 연결
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+  OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "http://otel-collector:4318/v1/metrics"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+  OTEL_SERVICE_NAME: "order-service"
+
+  # 환경 정보
+  DEPLOYMENT_ENV: "dev"
+  SERVICE_NAMESPACE: "order"
+
+---
+# Secret: 민감한 정보 (실제 환경에서는 External Secrets 사용)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: order-service-secret
+  namespace: order
+type: Opaque
+stringData:
+  # docker-compose의 DB 설정과 동일하게 맞춰주세요
+  SPRING_DATASOURCE_USERNAME: "order_app"
+  SPRING_DATASOURCE_PASSWORD: "order_password"
+
+---
+# Deployment: Pod 관리
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  namespace: order
+  labels:
+    app: order-service
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: order-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: order-service
+        version: v1
+    spec:
+      containers:
+        - name: order-service
+          image: order-service:dev
+          # Kind에서 로컬 이미지 사용 시 필수
+          imagePullPolicy: Never
+
+          ports:
+            - containerPort: 8080
+              name: http
+
+          # 환경변수 주입
+          envFrom:
+            - configMapRef:
+                name: order-service-config
+            - secretRef:
+                name: order-service-secret
+
+          # 추가 환경변수
+          # k8s 메타데이터 주입 (application.yaml에서 활용)
+          env:
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: K8S_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+
+            # JVM 최적화 옵션
+            - name: JAVA_OPTS
+              value: "-XX:+UseG1GC -XX:MaxRAMPercentage=75.0"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+
+          # 리소스 제한
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+
+          # Health Check (Spring Actuator 사용 시)
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            failureThreshold: 3
+
+---
+# Service: 네트워크 엔드포인트
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: order
+spec:
+  selector:
+    app: order-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  type: ClusterIP

@@ -1,0 +1,30 @@
+# path: ~/gitops-study/kind-config.yaml
+# Control Plane 1개 + Worker 2개 구성
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: gitops-study
+nodes:
+  # Control Plane (마스터)
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    # Ingress Controller용 포트 매핑
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 80
+        protocol: TCP
+      - containerPort: 443
+        hostPort: 443
+        protocol: TCP
+      # ArgoCD UI 접근용 (선택))
+      - containerPort: 30000
+        hostPort: 30000
+        protocol: TCP
+  # Worker 노드들
+  - role: worker
+  - role: worker

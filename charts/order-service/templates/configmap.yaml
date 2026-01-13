@@ -1,0 +1,20 @@
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "order-service.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "order-service.labels" . | nindent 4 }}
+data:
+  SPRING_PROFILES_ACTIVE: {{ .Values.spring.profile | quote }}
+  SPRING_DATASOURCE_URL: {{ include "order-service.databaseUrl" . | quote }}
+  SPRING_DATASOURCE_USERNAME: {{ .Values.database.username | quote }}
+  {{- if .Values.otel.enabled }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.otel.endpoint | quote }}
+  OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: {{ .Values.otel.metricsEndpoint | quote }}
+  OTEL_EXPORTER_OTLP_PROTOCOL: {{ .Values.otel.protocol | quote }}
+  OTEL_SERVICE_NAME: {{ include "order-service.fullname" . | quote }}
+  {{- end }}
+  DEPLOYMENT_ENV: {{ .Values.environment.name | quote }}
+  SERVICE_NAMESPACE: {{ .Values.environment.namespace | quote }}

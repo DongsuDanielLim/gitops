@@ -1,0 +1,11 @@
+# path: ~/gitops-study/manifests/namespace.yaml
+# Namespace: 리소스를 논리적으로 격리하는 가상 클러스터
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: order
+  labels:
+    # 레이블은 리소스 그룹핑과 선택에 사용
+    app.kubernetes.io/name: order-system
+    environment: study
