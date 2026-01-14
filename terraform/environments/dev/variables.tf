@@ -55,3 +55,57 @@ variable "single_nat_gateway" {
   type        = bool
   default     = true
 }
+
+# ------------------------------------------------------------------------------
+# EKS Variables
+# ------------------------------------------------------------------------------
+variable "eks_cluster_version" {
+  description = "EKS 클러스터 버전"
+  type        = string
+  default     = "1.29"
+}
+
+variable "eks_node_instance_types" {
+  description = "EKS 노드 인스턴스 타입"
+  type        = list(string)
+  default     = ["t3.medium"]
+}
+
+variable "eks_node_desired_size" {
+  description = "EKS 노드 희망 개수"
+  type        = number
+  default     = 2
+}
+
+variable "eks_node_min_size" {
+  description = "EKS 노드 최소 개수"
+  type        = number
+  default     = 1
+}
+
+variable "eks_node_max_size" {
+  description = "EKS 노드 최대 개수"
+  type        = number
+  default     = 4
+}
+
+variable "eks_node_capacity_type" {
+  description = "EKS 노드 용량 타입 (ON_DEMAND/SPOT)"
+  type        = string
+  default     = "ON_DEMAND"
+}
+
+variable "eks_public_access_cidrs" {
+  description = "EKS API 퍼블릭 접근 허용 CIDR"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+# ------------------------------------------------------------------------------
+# ECR Variables
+# ------------------------------------------------------------------------------
+variable "ecr_repository_names" {
+  description = "ECR 저장소 이름 목록"
+  type        = list(string)
+  default     = ["order-service"]
+}
