@@ -46,8 +46,8 @@ resource "aws_iam_role" "cluster" {
 }
 
 resource "aws_iam_role_policy_attachment" "cluster_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
-  role = "aws_iam_role.cluster.name"
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+  role = aws_iam_role.cluster.name
 }
 
 resource "aws_iam_role_policy_attachment" "cluster_vpc_resource_controller" {
@@ -85,7 +85,7 @@ resource "aws_security_group" "cluster" {
 resource "aws_eks_cluster" "this" {
   name = local.name_prefix
   version = var.cluster_version
-  role_arn = "aws_iam_role.cluster.arn"
+  role_arn = aws_iam_role.cluster.arn
 
   vpc_config {
     security_group_ids = [aws_security_group.cluster.id]
@@ -257,8 +257,8 @@ resource "aws_eks_node_group" "this" {
 
   scaling_config {
     desired_size = var.node_group_desired_size
-    max_size     = var.node_group_min_size
-    min_size     = var.node_group_max_size
+    max_size     = var.node_group_max_size
+    min_size     = var.node_group_min_size
   }
 
   update_config {
