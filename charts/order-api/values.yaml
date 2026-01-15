@@ -1,0 +1,43 @@
+# Order API Helm Values
+
+replicaCount: 3
+
+image:
+  repository: 338394181566.dkr.ecr.ap-northeast-2.amazonaws.com/ecommerce-dev-order-service
+  tag: "v1.0.0"
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  path: /api/orders
+
+# Spring Boot 설정
+spring:
+  profile: dev
+
+# 리소스 설정 (JVM 애플리케이션)
+resource:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 500m
+    memory: 1Gi
+
+# JVM 옵션
+javaOpts: "-Xms256m -Xmx512m -XX:+UseG1GC"
+
+# Probe 설정 (Spring Boot Actuator)
+probes:
+  liveness:
+    path: /actuator/health/liveness
+    initialDelaySeconds: 60
+    periodSeconds: 10
+  readiness:
+    path: /actuator/health/readiness
+    initialDelaySeconds: 30
+    periodSeconds: 5

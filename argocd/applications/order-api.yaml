@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kine: Application
+metadata:
+  name: order-api
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/DongsuDanielLim/order-api.git
+    targetRevision: master
+    path: charts/order-api
+    helm:
+      valueFiles:
+        - values.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: order-api
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
