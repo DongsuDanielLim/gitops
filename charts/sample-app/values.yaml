@@ -19,4 +19,4 @@ resources:
     memory: 128Mi
 
 # 환경별 메시지
-appMessage: "Hello from GitOps!"
+appMessage: "Hello from GitOps! (Updated)"
