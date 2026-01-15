@@ -62,3 +62,8 @@ output "configure_kubectl" {
   description = "kubectl 설정 명령어"
   value       = "aws eks update-kubeconfig --region ap-northeast-2 --name ${aws_eks_cluster.this.name}"
 }
+
+output "alb-controller-role-arn" {
+  description = "AWS Load Balancer Controller IAM Role ARN"
+  value       = aws_iam_role.aws_load_balancer_controller.arn
+}

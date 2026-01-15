@@ -1,0 +1,23 @@
+# AWS Load Balancer Controller Helm Values
+
+clusterName: ecommerce-dev
+region: ap-northeast-2
+
+serviceAccount:
+  create: true
+  name: aws-load-balancer-controller
+  annotations:
+    # IRSA 연결 - Terraform에서 생성한 Role ARN
+    eks.amazonaws.com/role-arn: arn:aws:iam::338394181566:role/ecommerce-dev-alb-controller-role
+
+# 리소스 설정
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+# VPC ID (선택사항이지만 명시 권장)
+vpcId: vpc-0bf039e741bab0fe5

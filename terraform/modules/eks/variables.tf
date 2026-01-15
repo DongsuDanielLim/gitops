@@ -93,7 +93,7 @@ variable "cluster_endpoint_private_access" {
 variable "cluster_endpoint_public_access_cidrs" {
   description = "퍼블릭 API 접근 허용 CIDR (보안을 위해 제한 권장)"
   type        = list(string)
-  default     = ["0.0.0.0/0"]  # 프로덕션에서는 사무실 IP로 제한
+  default     = ["0.0.0.0/0"] # 프로덕션에서는 사무실 IP로 제한
 }
 
 # ------------------------------------------------------------------------------
