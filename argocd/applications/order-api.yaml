@@ -1,5 +1,5 @@
 apiVersion: argoproj.io/v1alpha1
-kine: Application
+kind: Application
 metadata:
   name: order-api
   namespace: argocd
