@@ -1,11 +1,33 @@
+DS_Store
+*.swp
 .idea
+.vscode
 
 # Terraform
 .terraform/
 **/.terraform/
+#.terraform.lock.hcl
+
+# State 파일 (커밋 금지)
 *.tfstate
-*.tfstate.backup
-.terraform.lock.hcl
+*.tfstate.*
+
+terraform.tfstate
+terraform.tfstate.backup
+
+# 민감 정보가 포함될 수 있는 변수 파일
 *.tfvars
+!*.tfvars.example
+!terraform.tfvars # 환경 설정은 커밋 (민감정보 없는 경우)
+!example.tfvars
+
+# Crash log
 crash.log
+crash.*.log
+
+# override 파일 (로컬 테스트용)
 override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
