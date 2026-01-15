@@ -18,3 +18,8 @@ variable "project_name" {
     error_message = "project_name은 소문자, 숫자, 하이픈만 사용 가능합니다."
   }
 }
+
+variable "aws_account_id" {
+  description = "AWS 계정 ID (S3 버킷 이름 고유성 보장)"
+  type        = string
+}

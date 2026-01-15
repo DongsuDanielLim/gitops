@@ -8,7 +8,7 @@
 
 terraform {
   backend "s3" {
-    bucket       = "ecommerce-terraform-state"
+    bucket       = "ecommerce-terraform-state-338394181566"
     key          = "dev/terraform.tfstate"
     region       = "ap-northeast-2"
     encrypt      = true

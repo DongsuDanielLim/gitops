@@ -12,7 +12,7 @@
 # ==============================================================================
 
 locals {
-  bucket_name = "${var.project_name}-terraform-state"
+  bucket_name = "${var.project_name}-terraform-state-${var.aws_account_id}"
 }
 
 # ------------------------------------------------------------------------------
