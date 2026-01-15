@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sample-app
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/DongsuDanielLim/gitops.git
+    targetRevision: main
+    path: charts/sample-app
+    helm:
+      valueFiles:
+        - values.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sample-app
+
+  syncPolicy:
+    automated:
+      prune: true       # Git에서 삭제되면 클러스터에서도 삭제
+      selfHeal: true    # 수동 변경 시 자동 복구
+    syncOptions:
+      - CreateNamespace=true  # 네임스페이스 자동 생성
