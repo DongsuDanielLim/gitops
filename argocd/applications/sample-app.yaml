@@ -8,7 +8,7 @@ spec:
 
   source:
     repoURL: https://github.com/DongsuDanielLim/gitops.git
-    targetRevision: main
+    targetRevision: master
     path: charts/sample-app
     helm:
       valueFiles:
