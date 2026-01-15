@@ -247,10 +247,11 @@ resource "aws_security_group_rule" "nodes_to_cluster" {
 # ------------------------------------------------------------------------------
 resource "aws_eks_node_group" "this" {
   cluster_name = aws_eks_cluster.this.name
-  node_group_name = "${local.name_prefix}-node-group"
+  node_group_name = "${var.project_name}-${var.environment}-node-group"
   node_role_arn = aws_iam_role.node_group.arn
   subnet_ids = var.private_subnet_ids
 
+  ami_type = "AL2023_x86_64_STANDARD"
   instance_types = var.node_group_instance_types
   capacity_type = var.node_group_capacity_type
   disk_size = var.node_group_disk_size
