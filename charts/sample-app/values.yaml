@@ -1,0 +1,22 @@
+# 기본 설정
+replicaCount: 2
+
+image:
+  repository: nginx
+  tag: "1.25-alpine"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+# 환경별 메시지
+appMessage: "Hello from GitOps!"

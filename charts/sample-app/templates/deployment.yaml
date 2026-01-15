@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+      initContainers:
+        - name: init-html
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "<html><body><h1>{{ .Values.appMessage }}</h1><p>Version: {{ .Chart.AppVersion }}</p></body></html>" > /html/index.html
+          volumeMounts:
+            - name: html
+              mountPath: /html
+      volumes:
+        - name: html
+          emptyDir: {}

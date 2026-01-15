@@ -1,0 +1,57 @@
+# ArgoCD Helm Values for Dev Environment
+
+# Controller 설정 (Dev 환경용 최소 설정)
+controller:
+  # HA 비활성화 (Dev 환경)
+  replicas: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Server 설정
+server:
+  replicas: 1
+  # 서비스 타입 (ALB Controller 없으므로 일단 ClusterIP)
+  service:
+    type: ClusterIP
+  # 나중에 ALB Controller 설치 후 활성화
+  ingress:
+    enabled: false
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# Repo Server 설정
+repoServer:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# Redis 설정
+redis:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+# 기본 설정
+configs:
+  params:
+    ## HTTP로 접근 허용 (개발 환경)
+    server.insecure: true
