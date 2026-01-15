@@ -182,7 +182,7 @@ resource "aws_security_group" "node_group" {
   ingress {
     description = "Cluster to node kubelet"
     from_port = 10250
-    to_port = 443
+    to_port = 10250
     protocol = "tcp"
     security_groups = [aws_security_group.cluster.id]
   }
