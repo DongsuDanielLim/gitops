@@ -12,8 +12,7 @@
 # ==============================================================================
 
 locals {
-  bucket_name    = "${var.project_name}-terraform-state"
-  # dynamodb_table = "${var.project_name}-terraform-lock"
+  bucket_name = "${var.project_name}-terraform-state"
 }
 
 # ------------------------------------------------------------------------------

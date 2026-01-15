@@ -25,8 +25,8 @@ eks_node_instance_types = ["t3.medium"]
 eks_node_desired_size   = 2
 eks_node_min_size       = 1
 eks_node_max_size       = 4
-eks_node_capacity_type  = "ON_DEMAND"  # 비용 절감 시 "SPOT"
-eks_public_access_cidrs = ["0.0.0.0/0"]  # 프로덕션에서는 제한 필요
+eks_node_capacity_type  = "ON_DEMAND"   # 비용 절감 시 "SPOT"
+eks_public_access_cidrs = ["0.0.0.0/0"] # 프로덕션에서는 제한 필요
 
 # ECR
 ecr_repository_names = ["order-service"]
