@@ -6,3 +6,6 @@
 *.tfstate
 *.tfstate.backup
 .terraform.lock.hcl
+*.tfvars
+crash.log
+override.tf
