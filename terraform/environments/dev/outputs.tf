@@ -63,3 +63,8 @@ output "ecr_repository_urls" {
   description = "ECR 저장소 URLs"
   value       = module.ecr.repository_urls
 }
+
+output "alb_controller_role_arn" {
+  description = "AWS Load Balancer Controller IAM Role ARN"
+  value       = module.eks.alb-controller-role-arn
+}

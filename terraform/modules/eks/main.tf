@@ -47,7 +47,7 @@ resource "aws_iam_role" "cluster" {
 
 resource "aws_iam_role_policy_attachment" "cluster_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-  role = aws_iam_role.cluster.name
+  role       = aws_iam_role.cluster.name
 }
 
 resource "aws_iam_role_policy_attachment" "cluster_vpc_resource_controller" {
@@ -59,15 +59,15 @@ resource "aws_iam_role_policy_attachment" "cluster_vpc_resource_controller" {
 # EKS Cluster Security Group
 # ------------------------------------------------------------------------------
 resource "aws_security_group" "cluster" {
-  name = "${local.name_prefix}-eks-cluster-sg"
+  name        = "${local.name_prefix}-eks-cluster-sg"
   description = "Security group for EKS cluster control plane"
-  vpc_id = var.vpc_id
+  vpc_id      = var.vpc_id
 
   # 기본적으로 아웃바운드 허용
   egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -83,16 +83,16 @@ resource "aws_security_group" "cluster" {
 # EKS Cluster
 # ------------------------------------------------------------------------------
 resource "aws_eks_cluster" "this" {
-  name = local.name_prefix
-  version = var.cluster_version
+  name     = local.name_prefix
+  version  = var.cluster_version
   role_arn = aws_iam_role.cluster.arn
 
   vpc_config {
-    security_group_ids = [aws_security_group.cluster.id]
-    subnet_ids = concat(var.private_subnet_ids, var.public_subnet_ids)
+    security_group_ids      = [aws_security_group.cluster.id]
+    subnet_ids              = concat(var.private_subnet_ids, var.public_subnet_ids)
     endpoint_private_access = var.cluster_endpoint_private_access
-    endpoint_public_access = var.cluster_endpoint_public_access
-    public_access_cidrs = var.cluster_endpoint_public_access_cidrs
+    endpoint_public_access  = var.cluster_endpoint_public_access
+    public_access_cidrs     = var.cluster_endpoint_public_access_cidrs
   }
 
   enabled_cluster_log_types = [
@@ -157,65 +157,65 @@ resource "aws_iam_role_policy_attachment" "node_ecr_policy" {
 # Node Group Security Group
 # ------------------------------------------------------------------------------
 resource "aws_security_group" "node_group" {
-  name = "${local.name_prefix}-eks-node-sg"
+  name        = "${local.name_prefix}-eks-node-sg"
   description = "Security group form EKS worker nodes"
-  vpc_id = var.vpc_id
+  vpc_id      = var.vpc_id
 
   # 노드 간 통신 허용
   ingress {
     description = "Node to node communication"
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = []
   }
 
   # 클러스터 -> 노드 통신 허용
   ingress {
-    description = "Cluster to node communication"
-    from_port = 443
-    to_port = 443
-    protocol = "tcp"
+    description     = "Cluster to node communication"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
     security_groups = [aws_security_group.cluster.id]
   }
 
   ingress {
-    description = "Cluster to node kubelet"
-    from_port = 10250
-    to_port = 10250
-    protocol = "tcp"
+    description     = "Cluster to node kubelet"
+    from_port       = 10250
+    to_port         = 10250
+    protocol        = "tcp"
     security_groups = [aws_security_group.cluster.id]
   }
 
   # CoreDNS
   ingress {
     description = "CoreDNS TCP"
-    from_port = 53
-    to_port = 53
-    protocol = "tcp"
-    self = true
+    from_port   = 53
+    to_port     = 53
+    protocol    = "tcp"
+    self        = true
   }
 
   ingress {
     description = "CoreDNS UDP"
-    from_port = 53
-    to_port = 53
-    protocol = "udp"
-    self = true
+    from_port   = 53
+    to_port     = 53
+    protocol    = "udp"
+    self        = true
   }
 
   # 아웃바운드 전체 허용
   egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = []
   }
 
   tags = merge(
     local.common_tags,
     {
-      Name = "${local.name_prefix}-eks-node-sg"
+      Name                                         = "${local.name_prefix}-eks-node-sg"
       "kubernetes.io/cluster/${local.name_prefix}" = "owned"
     }
   )
@@ -223,38 +223,38 @@ resource "aws_security_group" "node_group" {
 
 # 클러스터 -> 노드 통신 규칙 (클러스터 SG에 추가)
 resource "aws_security_group_rule" "cluster_to_nodes" {
-  description       = "Cluster to nodes"
-  type              = "egress"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
+  description              = "Cluster to nodes"
+  type                     = "egress"
+  from_port                = 0
+  to_port                  = 0
+  protocol                 = "-1"
   source_security_group_id = aws_security_group.node_group.id
-  security_group_id = aws_security_group.cluster.id
+  security_group_id        = aws_security_group.cluster.id
 }
 
 resource "aws_security_group_rule" "nodes_to_cluster" {
-  description       = "Nodes to cluster"
-  type              = "ingress"
-  from_port         = 443
-  to_port           = 443
-  protocol          = "tcp"
+  description              = "Nodes to cluster"
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
   source_security_group_id = aws_security_group.node_group.id
-  security_group_id = aws_security_group.cluster.id
+  security_group_id        = aws_security_group.cluster.id
 }
 
 # ------------------------------------------------------------------------------
 # EKS Managed Node Group
 # ------------------------------------------------------------------------------
 resource "aws_eks_node_group" "this" {
-  cluster_name = aws_eks_cluster.this.name
+  cluster_name    = aws_eks_cluster.this.name
   node_group_name = "${var.project_name}-${var.environment}-node-group"
-  node_role_arn = aws_iam_role.node_group.arn
-  subnet_ids = var.private_subnet_ids
+  node_role_arn   = aws_iam_role.node_group.arn
+  subnet_ids      = var.private_subnet_ids
 
-  ami_type = "AL2023_x86_64_STANDARD"
+  ami_type       = "AL2023_x86_64_STANDARD"
   instance_types = var.node_group_instance_types
-  capacity_type = var.node_group_capacity_type
-  disk_size = var.node_group_disk_size
+  capacity_type  = var.node_group_capacity_type
+  disk_size      = var.node_group_disk_size
 
   scaling_config {
     desired_size = var.node_group_desired_size
@@ -268,7 +268,7 @@ resource "aws_eks_node_group" "this" {
 
   labels = {
     Environment = var.environment
-    NodeGroup = "default"
+    NodeGroup   = "default"
   }
 
   tags = merge(
