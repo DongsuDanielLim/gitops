@@ -10,6 +10,10 @@ service:
   type: ClusterIP
   port: 80
 
+# Ingress 설정 추가
+ingress:
+  enabled: true
+
 resources:
   requests:
     cpu: 50m
