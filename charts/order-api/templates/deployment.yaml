@@ -34,13 +34,13 @@ spec:
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: { { .Values.database.secretName } }
-                  key: { { .Values.database.usernameKey } }
+                  name: {{ .Values.database.secretName }}
+                  key: {{ .Values.database.usernameKey }}
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: { { .Values.database.secretName } }
-                  key: { { .Values.database.passwordKey } }
+                  name: {{ .Values.database.secretName }}
+                  key: {{ .Values.database.passwordKey }}
             {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
