@@ -52,6 +52,16 @@ echo -e "${CYAN}[삭제 전 상태]${NC}"
 kubectl get applications -n argocd 2>/dev/null || echo "  Application 없음"
 echo ""
 echo -e "${CYAN}[삭제 실행]${NC}"
+# Finalizer 제거 (강제 삭제)
+kubectl patch application order-api -n argocd --type=json \
+    -p='[{"op": "remove", "path": "/metadata/finalizers"}]' 2>/dev/null || true
+
+kubectl patch application postgres-dev -n argocd --type=json \
+    -p='[{"op": "remove", "path": "/metadata/finalizers"}]' 2>/dev/null || true
+
+kubectl patch application aws-load-balancer-controller -n argocd --type=json \
+    -p='[{"op": "remove", "path": "/metadata/finalizers"}]' 2>/dev/null || true
+
 kubectl delete application order-api -n argocd --ignore-not-found
 kubectl delete application postgres-dev -n argocd --ignore-not-found
 kubectl delete application aws-load-balancer-controller -n argocd --ignore-not-found
@@ -97,6 +107,8 @@ aws ec2 describe-volumes \
     --output table 2>/dev/null || echo "  관련 EBS 없음"
 echo ""
 echo -e "${CYAN}[삭제 실행]${NC}"
+kubectl patch pvc postgres-data-postgres-0 -n order-api --type=json \
+    -p='[{"op": "remove", "path": "/metadata/finalizers"}]'
 kubectl delete pvc --all -n order-api --ignore-not-found
 echo ""
 echo -e "${CYAN}[삭제 후 상태 - K8s PVC]${NC}"
