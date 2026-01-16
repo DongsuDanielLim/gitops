@@ -18,6 +18,3 @@ resources:
   limits:
     cpu: 200m
     memory: 256Mi
-
-# VPC ID (선택사항이지만 명시 권장)
-vpcId: vpc-0bf039e741bab0fe5
