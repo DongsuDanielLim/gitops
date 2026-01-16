@@ -4,7 +4,7 @@ replicaCount: 2
 
 image:
   repository: 338394181566.dkr.ecr.ap-northeast-2.amazonaws.com/ecommerce-dev-order-service
-  tag: "latest"
+  tag: "v1.0.1"
   pullPolicy: Always
 
 service:
