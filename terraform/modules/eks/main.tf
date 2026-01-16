@@ -103,6 +103,10 @@ resource "aws_eks_cluster" "this" {
     "scheduler"
   ]
 
+  timeouts {
+    delete = "30m"
+  }
+
   tags = merge(
     local.common_tags,
     {
