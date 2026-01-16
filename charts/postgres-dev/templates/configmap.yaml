@@ -1,0 +1,173 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-scripts
+  namespace: {{ .Release.Namespace }}
+data:
+  init.sql: |
+    -- 기존 테이블이 있다면 삭제 (개발 환경용)
+    DROP TABLE IF EXISTS order_items CASCADE;
+    DROP TABLE IF EXISTS orders CASCADE;
+
+    -- 1. orders 테이블
+    -- Description: 주문 정보를 저장하는 메인 테이블
+    -- Saga 패턴을 위한 상태 플래그 포함
+    CREATE TABLE orders (
+        -- 기본 정보
+        id UUID PRIMARY KEY,
+        user_id UUID NOT NULL,
+
+        -- 금액 정보
+        total_amount BIGINT NOT NULL,
+        discount_amount BIGINT NOT NULL DEFAULT 0,
+        final_amount BIGINT NOT NULL,
+
+        -- 쿠폰 정보
+        coupon_id UUID,
+
+        -- 주문 상태
+        status VARCHAR(50) NOT NULL,
+
+        -- Saga 상태 플래그
+        stock_reserved BOOLEAN NOT NULL DEFAULT FALSE,
+        coupon_reserved BOOLEAN NOT NULL DEFAULT FALSE,
+        payment_authorized BOOLEAN NOT NULL DEFAULT FALSE,
+
+        -- 실패 정보
+        failure_reason TEXT,
+
+        -- 낙관적 락 (Optimistic Locking)
+        version INTEGER NOT NULL DEFAULT 1,
+
+        -- 타임스탬프
+        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    );
+
+    -- 2. order_items 테이블
+    -- Description: 주문 항목 정보를 저장하는 테이블
+    CREATE TABLE order_items (
+        -- 기본 정보
+        id UUID PRIMARY KEY,
+        order_id UUID NOT NULL,
+
+        -- 상품 정보
+        product_id UUID NOT NULL,
+        product_name VARCHAR(255) NOT NULL,
+
+        -- 수량 및 가격
+        quantity INTEGER NOT NULL,
+        price BIGINT NOT NULL,
+        subtotal BIGINT NOT NULL,
+
+        -- 재고 예약 정보
+        reservation_key VARCHAR(255),
+        stock_reserved BOOLEAN NOT NULL DEFAULT FALSE,
+
+        -- 타임스탬프
+        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+
+        -- 외래 키
+        CONSTRAINT fk_order_items_order
+            FOREIGN KEY (order_id)
+            REFERENCES orders (id)
+            ON DELETE CASCADE
+    );
+
+    -- 3. 인덱스 생성
+    -- orders 테이블 인덱스
+    CREATE INDEX idx_orders_user_id ON orders (user_id);
+    CREATE INDEX idx_orders_status ON orders (status);
+    CREATE INDEX idx_orders_created_at ON orders (created_at DESC);
+    -- 복합 인덱스: 사용자별 주문 조회 최적화
+    CREATE INDEX idx_orders_user_id_created_at ON orders (user_id, created_at DESC);
+    -- order_items 테이블 인덱스
+    CREATE INDEX idx_order_items_order_id ON order_items (order_id);
+    CREATE INDEX idx_order_items_product_id ON order_items (product_id);
+    CREATE INDEX idx_order_items_reservation_key ON order_items (reservation_key) WHERE reservation_key IS NOT NULL;
+
+    -- 4. 주석 (Comments)
+    -- orders 테이블 주석
+    COMMENT ON TABLE orders IS '주문 정보를 저장하는 메인 테이블 (Saga 패턴 지원)';
+    COMMENT ON COLUMN orders.id IS '주문 고유 ID (UUID)';
+    COMMENT ON COLUMN orders.user_id IS '주문한 사용자 ID';
+    COMMENT ON COLUMN orders.total_amount IS '총 금액 (할인 전)';
+    COMMENT ON COLUMN orders.discount_amount IS '할인 금액';
+    COMMENT ON COLUMN orders.final_amount IS '최종 결제 금액 (total_amount - discount_amount)';
+    COMMENT ON COLUMN orders.coupon_id IS '사용한 쿠폰 ID (선택)';
+    COMMENT ON COLUMN orders.status IS '주문 상태 (PENDING, RESERVING, RESERVED, PAYMENT_AUTHORIZED, PAID, FAILED, CANCELLED)';
+    COMMENT ON COLUMN orders.stock_reserved IS '재고 예약 완료 여부';
+    COMMENT ON COLUMN orders.coupon_reserved IS '쿠폰 예약 완료 여부';
+    COMMENT ON COLUMN orders.payment_authorized IS '결제 승인 완료 여부';
+    COMMENT ON COLUMN orders.failure_reason IS '주문 실패 사유';
+    COMMENT ON COLUMN orders.version IS '낙관적 락을 위한 버전 번호';
+    COMMENT ON COLUMN orders.created_at IS '주문 생성 일시';
+    COMMENT ON COLUMN orders.updated_at IS '주문 수정 일시';
+
+    -- order_items 테이블 주석
+    COMMENT ON TABLE order_items IS '주문 항목 정보를 저장하는 테이블';
+    COMMENT ON COLUMN order_items.id IS '주문 항목 고유 ID (UUID)';
+    COMMENT ON COLUMN order_items.order_id IS '주문 ID (FK to orders)';
+    COMMENT ON COLUMN order_items.product_id IS '상품 ID';
+    COMMENT ON COLUMN order_items.product_name IS '주문 시점의 상품명';
+    COMMENT ON COLUMN order_items.quantity IS '주문 수량';
+    COMMENT ON COLUMN order_items.price IS '주문 시점의 단가';
+    COMMENT ON COLUMN order_items.subtotal IS '소계 (quantity * price)';
+    COMMENT ON COLUMN order_items.reservation_key IS '재고 예약 키 (orderId:itemId)';
+    COMMENT ON COLUMN order_items.stock_reserved IS '재고 예약 완료 여부';
+    COMMENT ON COLUMN order_items.created_at IS '주문 항목 생성 일시';
+
+    -- Inbox 테이블: 수신 이벤트 멱등성 보장 (이벤트 중복 처리 방지)
+    CREATE TABLE IF NOT EXISTS inbox_events (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        message_id VARCHAR(255) NOT NULL UNIQUE,  -- Kafka message key or offset-based unique ID
+        event_type VARCHAR(100) NOT NULL,         -- 'coupon.reserved', 'stock.reserved' etc
+        aggregate_id VARCHAR(255) NOT NULL,       -- couponId, productId etc
+        payload JSONB NOT NULL,                   -- 이벤트 전체 데이터
+        processed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX idx_inbox_message_id ON inbox_events(message_id);
+    CREATE INDEX idx_inbox_event_type ON inbox_events(event_type, created_at DESC);
+    CREATE INDEX idx_inbox_aggregate_id ON inbox_events(aggregate_id);
+
+    COMMENT ON TABLE inbox_events IS '수신 이벤트 멱등성 보장 테이블 (Inbox 패턴)';
+    COMMENT ON COLUMN inbox_events.message_id IS 'Kafka 메시지 고유 ID (중복 처리 방지)';
+    COMMENT ON COLUMN inbox_events.event_type IS '이벤트 타입';
+    COMMENT ON COLUMN inbox_events.aggregate_id IS 'Aggregate 고유 ID';
+    COMMENT ON COLUMN inbox_events.payload IS '이벤트 페이로드 (JSON)';
+    COMMENT ON COLUMN inbox_events.processed_at IS '처리 완료 시각';
+
+    -- 7. Outbox 테이블: 발행 이벤트 안전성 보장 (트랜잭션 원자성)
+    CREATE TABLE IF NOT EXISTS outbox_events (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        aggregate_type VARCHAR(100) NOT NULL,    -- 'Order', 'OrderItem' etc
+        aggregate_id VARCHAR(255) NOT NULL,      -- orderId, itemId etc
+        event_type VARCHAR(100) NOT NULL,        -- 'order.created', 'order.completed' etc
+        payload JSONB NOT NULL,                  -- 이벤트 전체 데이터
+        saga_id VARCHAR(255),                    -- Saga 식별자 (orderId) - Kafka 헤더로 전파
+        saga_step VARCHAR(100),                  -- Saga 단계 (order-created 등) - Kafka 헤더로 전파
+        idem_key VARCHAR(255),                   -- 멱등성 키 (orderId:item) - Kafka 헤더로 전파
+        published BOOLEAN DEFAULT FALSE,
+        published_at TIMESTAMP WITH TIME ZONE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        version INT DEFAULT 1
+    );
+
+    CREATE INDEX idx_outbox_unpublished ON outbox_events(published, created_at) WHERE published = FALSE;
+    CREATE INDEX idx_outbox_aggregate ON outbox_events(aggregate_type, aggregate_id);
+    CREATE INDEX idx_outbox_event_type ON outbox_events(event_type);
+    CREATE INDEX idx_outbox_saga_id ON outbox_events(saga_id) WHERE saga_id IS NOT NULL;
+    CREATE INDEX idx_outbox_idem_key ON outbox_events(idem_key) WHERE idem_key IS NOT NULL;
+
+    COMMENT ON TABLE outbox_events IS '발행 이벤트 안전성 보장 테이블 (Outbox 패턴)';
+    COMMENT ON COLUMN outbox_events.aggregate_type IS 'Aggregate 타입';
+    COMMENT ON COLUMN outbox_events.aggregate_id IS 'Aggregate 고유 ID';
+    COMMENT ON COLUMN outbox_events.event_type IS '이벤트 타입';
+    COMMENT ON COLUMN outbox_events.payload IS '이벤트 페이로드 (JSON)';
+    COMMENT ON COLUMN outbox_events.saga_id IS 'Saga 식별자 (orderId) - Kafka 헤더로 전파하여 분산 트랜잭션 추적';
+    COMMENT ON COLUMN outbox_events.saga_step IS 'Saga 단계 (order-created, stock-reserved 등) - Saga 진행 상황 추적';
+    COMMENT ON COLUMN outbox_events.idem_key IS '멱등성 키 (orderId:item) - 중복 처리 방지';
+    COMMENT ON COLUMN outbox_events.published IS '발행 완료 여부';
+    COMMENT ON COLUMN outbox_events.published_at IS 'Kafka 발행 완료 시각';

@@ -1,6 +1,6 @@
 # Order API Helm Values
 
-replicaCount: 3
+replicaCount: 2
 
 image:
   repository: 338394181566.dkr.ecr.ap-northeast-2.amazonaws.com/ecommerce-dev-order-service
@@ -18,6 +18,15 @@ ingress:
 # Spring Boot 설정
 spring:
   profile: dev
+
+database:
+  host: postgres-svc
+  port: 5432
+  name: order_db
+  # secret 참조 (postgres-credentials)
+  secretName: postgres-credentials
+  usernameKey: POSTGRES_USER
+  passwordKey: POSTGRES_PASSWORD
 
 # 리소스 설정 (JVM 애플리케이션)
 resource:

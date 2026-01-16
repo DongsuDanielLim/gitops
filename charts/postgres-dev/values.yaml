@@ -1,0 +1,26 @@
+image:
+  repository: postgres
+  tag: "16.1-alpine"
+  pullPolicy: IfNotPresent
+
+database:
+  name: order_db
+  user: order_app
+  password: "order_password"  # 개발용 - prod에서는 External Secrets 사용
+
+resources:
+  requests:
+    cpu: "250m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+persistence:
+  enabled: true
+  storageClass: "gp2"
+  size: "10Gi"
+
+service:
+  type: ClusterIP
+  port: 5432
