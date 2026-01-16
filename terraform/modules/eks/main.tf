@@ -171,7 +171,7 @@ resource "aws_security_group" "node_group" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = []
+    self        = true
   }
 
   # 클러스터 -> 노드 통신 허용
@@ -213,7 +213,7 @@ resource "aws_security_group" "node_group" {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = []
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = merge(
@@ -328,6 +328,20 @@ resource "aws_eks_addon" "kube_proxy" {
   resolve_conflicts_on_update = "OVERWRITE"
 
   tags = local.common_tags
+}
+
+resource "aws_eks_addon" "ebs_csi" {
+  cluster_name = aws_eks_cluster.this.name
+  addon_name   = "aws-ebs-csi-driver"
+  service_account_role_arn = aws_iam_role.ebs_csi_driver.arn
+
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+  tags = var.tags
+
+  depends_on = [aws_eks_node_group.this]
+
 }
 
 # ------------------------------------------------------------------------------
