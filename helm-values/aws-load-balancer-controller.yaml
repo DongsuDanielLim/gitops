@@ -2,6 +2,7 @@
 
 clusterName: ecommerce-dev
 region: ap-northeast-2
+vpcId: vpc-02a145991dc734bca
 
 serviceAccount:
   create: true
