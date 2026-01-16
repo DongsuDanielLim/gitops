@@ -29,7 +29,7 @@ database:
   passwordKey: POSTGRES_PASSWORD
 
 # 리소스 설정 (JVM 애플리케이션)
-resource:
+resources:
   requests:
     cpu: 250m
     memory: 512Mi
