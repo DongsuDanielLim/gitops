@@ -21,6 +21,9 @@ terraform.tfstate.backup
 !terraform.tfvars # 환경 설정은 커밋 (민감정보 없는 경우)
 !example.tfvars
 
+**/.tfplan
+tfplan
+
 # Crash log
 crash.log
 crash.*.log
