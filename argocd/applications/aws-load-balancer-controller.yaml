@@ -19,6 +19,13 @@ spec:
     server: https://kubernetes.default.svc
     namespace: kube-system
   ignoreDifferences:
+    # Webhook TLS 인증서 변경 무시
+    - group: ""
+      kind: Secret
+      name: aws-load-balancer-tls
+      jsonPointers:
+        - /data
+    # Webhook caBundle 변경 무시
     - group: admissionregistration.k8s.io
       kind: MutatingWebhookConfiguration
       jqPathExpressions:
