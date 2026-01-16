@@ -27,6 +27,21 @@ spec:
               value: "{{ .Values.spring.profile }}"
             - name: JAVA_OPTS
               value: "{{ .Values.javaOpts }}"
+
+            {{- if .Values.database }}
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}"
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: { { .Values.database.secretName } }
+                  key: { { .Values.database.usernameKey } }
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: { { .Values.database.secretName } }
+                  key: { { .Values.database.passwordKey } }
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:

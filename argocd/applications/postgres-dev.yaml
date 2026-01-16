@@ -1,27 +1,23 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: order-api
+  name: postgres-dev
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "1" # PostgreSQL(wave 0) 이후 배포
   finalizers:
-    - resource-finalizer.argocd.argoproj.io
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-
   source:
     repoURL: https://github.com/DongsuDanielLim/gitops.git
     targetRevision: master
-    path: charts/order-api
+    path: charts/postgres-dev
     helm:
       valueFiles:
         - values.yaml
-
+        - values-dev.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: order-api
-
   syncPolicy:
     automated:
       prune: true
